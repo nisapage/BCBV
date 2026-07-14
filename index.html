@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Kuliah: Hubungan BC dengan B-V</title>
+  <style>
+    :root {
+      --bg-main: #0a0a12;
+      --card-bg: #131320;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-yellow: #ffd700;
+      --accent-cyan: #38bdf8;
+      --accent-red: #f43f5e;
+      --border: #26263a;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      margin: 0;
+      padding: 25px 15px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 850px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 30px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+    }
+
+    h1 {
+      font-size: 22px;
+      color: var(--accent-yellow);
+      margin: 0 0 5px 0;
+      text-align: center;
+    }
+
+    p.subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 25px;
+    }
+
+    .canvas-box {
+      background: #05050a;
+      border: 1px solid #2d2d44;
+      border-radius: 12px;
+      padding: 15px;
+      position: relative;
+      margin-bottom: 25px;
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* Panel Statistik */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .stat-val {
+      font-size: 22px;
+      font-weight: bold;
+      color: var(--accent-cyan);
+    }
+
+    .star-color-preview {
+      width: 100%;
+      height: 6px;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    /* Kontrol Input */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      background: rgba(0,0,0,0.2);
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .row-ctrl {
+      display: grid;
+      grid-template-columns: 180px 1fr 70px;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .label-ctrl { font-size: 14px; font-weight: 500; }
+    
+    .val-badge {
+      background: #26263a;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+      color: var(--accent-yellow);
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent-yellow);
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      background: #26263a;
+      border: 1px solid #3e3e5e;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .btn:hover, .btn.active {
+      background: var(--accent-yellow);
+      color: #000;
+      font-weight: bold;
+      border-color: var(--accent-yellow);
+    }
+
+    .type-switch {
+      display: flex;
+      gap: 15px;
+      margin-top: 5px;
+    }
+
+    .type-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #1a1a2e;
+      padding: 8px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      flex: 1;
+    }
+    
+    input[type=radio] { accent-color: var(--accent-yellow); cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Hubungan Koreksi Bolometrik (BC) & Indeks Warna (B-V)</h1>
+  <p class="subtitle">Simulasi Interaktif berdasarkan Slide Kuliah Astronomi (Konvensi Nilai Mutlak BC)</p>
+
+  <div class="canvas-box">
+    <canvas id="graphCanvas" width="800" height="380"></canvas>
+  </div>
+
+  <!-- Panel Statistik Real-time -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Indeks Warna (B - V)</div>
+      <div class="stat-val" id="dispBV">0.00</div>
+      <div class="star-color-preview" id="colorBar"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Koreksi Bolometrik (BC)</div>
+      <div class="stat-val" id="dispBC" style="color: var(--accent-yellow);">0.15</div>
+      <div class="star-color-preview" id="colorBar2"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Estimasi Suhu (Kelvin)</div>
+      <div class="stat-val" id="dispTemp" style="color: #a78bfa;">9600 K</div>
+      <div class="star-color-preview" id="colorBar3"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Dominasi Energi Hilang</div>
+      <div class="stat-val" id="dispLoss" style="font-size: 16px; margin-top: 4px; color: #fb7185;">Sinar Ultraviolet (UV)</div>
+      <div class="star-color-preview" id="colorBar4"></div>
+    </div>
+  </div>
+
+  <!-- Kontrol Slider & Tombol -->
+  <div class="controls">
+    <div class="row-ctrl">
+      <span class="label-ctrl">Geser Indeks Warna (B-V):</span>
+      <input type="range" id="sliderBV" min="-0.40" max="1.20" step="0.01" value="0.00">
+      <div class="val-badge" id="badgeBV">0.00</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span class="label-ctrl" style="font-size: 13px; color: var(--text-muted);">Pilih Kelompok Bintang:</span>
+      <div class="type-switch">
+        <label class="type-label">
+          <input type="radio" name="starType" value="main" checked> 
+          <span style="color: #ffd700; font-weight: bold;">───</span> Bintang Deret Utama (Solid)
+        </label>
+        <label class="type-label">
+          <input type="radio" name="starType" value="super"> 
+          <span style="color: #ffd700; font-weight: bold;">- - -</span> Bintang Maharaksasa (Dashed)
+        </label>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 5px;">
+      <span class="label-ctrl" style="font-size: 13px; color: var(--text-muted);">Preset Bintang Nyata:</span>
+      <div class="btn-group">
+        <button class="btn active" onclick="setPreset(0.00, 'main', this)">Vega (B-V = 0.00)</button>
+        <button class="btn" onclick="setPreset(0.30, 'main', this)">Titik Minimum (BC = 0)</button>
+        <button class="btn" onclick="setPreset(0.65, 'main', this)">Matahari (B-V = 0.65)</button>
+        <button class="btn" onclick="setPreset(-0.23, 'main', this)">Spica (B-V = -0.23)</button>
+        <button class="btn" onclick="setPreset(1.15, 'super', this)">Betelgeuse (Maharaksasa)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  const sliderBV = document.getElementById('sliderBV');
+  const badgeBV = document.getElementById('badgeBV');
+  const radioTypes = document.getElementsByName('starType');
+
+  const dispBV = document.getElementById('dispBV');
+  const dispBC = document.getElementById('dispBC');
+  const dispTemp = document.getElementById('dispTemp');
+  const dispLoss = document.getElementById('dispLoss');
+  const colorBars = [document.getElementById('colorBar'), document.getElementById('colorBar2'), document.getElementById('colorBar3'), document.getElementById('colorBar4')];
+
+  // Rumus matematika pendekatan untuk menghasilkan kurva persis seperti slide kuliah ITB
+  function calcBC(bv, isSupergiant) {
+    let bc = 0;
+    if (!isSupergiant) {
+      // Kurva Bintang Deret Utama (Solid Line)
+      if (bv <= 0.30) {
+        bc = 1.667 * Math.pow(0.30 - bv, 2) + 16.0 * Math.pow(Math.max(0, -bv), 2.5);
+      } else {
+        bc = 0.85 * Math.pow(bv - 0.30, 1.8);
+      }
+    } else {
+      // Kurva Bintang Maharaksasa (Dashed Line)
+      if (bv <= 0.30) {
+        bc = 1.5 * Math.pow(0.30 - bv, 2) + 14.0 * Math.pow(Math.max(0, -bv), 2.5);
+      } else {
+        bc = 0.58 * Math.pow(bv - 0.30, 1.7); // Lebih rendah saat dingin sesuai slide
+      }
+    }
+    return Math.max(0, bc);
+  }
+
+  // Estimasi Suhu Kelvin dari Indeks Warna B-V (Rumus Ballesteros)
+  function calcTemp(bv) {
+    return Math.round(4600 * ((1 / (0.92 * bv + 1.7)) + (1 / (0.92 * bv + 0.62))));
+  }
+
+  // Warna spektrum bintang untuk visualisasi UI
+  function getStarColorRGB(bv) {
+    if (bv < -0.2) return '#93c5fd'; // Biru terang
+    if (bv < 0.1) return '#f8fafc';  // Putih kebiruan
+    if (bv < 0.4) return '#fef08a';  // Putih kuning (Titik minimum)
+    if (bv < 0.8) return '#facc15';  // Kuning Matahari
+    if (bv < 1.2) return '#fb923c';  // Jingga
+    return '#f87171';                // Merah Betelgeuse
+  }
+
+  function drawGraph(currentBV, isSupergiant) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padL = 60, padB = 40, padT = 20, padR = 30;
+    const w = canvas.width - padL - padR;
+    const h = canvas.height - padB - padT;
+
+    // 1. Garis Grid & Sumbu
+    ctx.strokeStyle = '#1e1e2f';
+    ctx.lineWidth = 1;
+    ctx.font = '11px Segoe UI';
+    ctx.fillStyle = '#64748b';
+
+    // Grid Horizontal (BC dari 0.00 sampai 2.00)
+    for (let i = 0; i <= 4; i++) {
+      const val = (i * 0.50).toFixed(2);
+      const y = padT + h - (i / 4) * h;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(canvas.width - padR, y); ctx.stroke();
+      ctx.fillText(val, padL - 35, y + 4);
+    }
+
+    // Grid Vertikal (B-V dari -0.40 sampai 1.20)
+    const minBV = -0.40, maxBV = 1.20, rangeBV = maxBV - minBV;
+    for (let bv = minBV; bv <= maxBV + 0.01; bv += 0.20) {
+      const x = padL + ((bv - minBV) / rangeBV) * w;
+      ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + h); ctx.stroke();
+      ctx.fillText(bv.toFixed(2), x - 12, padT + h + 20);
+    }
+
+    // Garis Sumbu Utama
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + h); ctx.lineTo(canvas.width - padR, padT + h);
+    ctx.stroke();
+
+    ctx.fillText('Indeks Warna (B - V) →', padL + w/2 - 50, canvas.height - 5);
+    ctx.fillText('Koreksi Bolometrik (BC) ↑', 10, padT - 8);
+
+    // 2. Gambar Garis Kurva Maharaksasa (Dashed Line - Putus-putus)
+    ctx.beginPath();
+    ctx.setLineDash([6, 6]);
+    ctx.strokeStyle = '#eab308';
+    ctx.lineWidth = 2.5;
+    for (let x = 0; x <= w; x += 2) {
+      const bv = minBV + (x / w) * rangeBV;
+      const bc = calcBC(bv, true);
+      const y = padT + h - (bc / 2.00) * h;
+      if (x === 0) ctx.moveTo(padL + x, y); else ctx.lineTo(padL + x, y);
+    }
+    ctx.stroke();
+
+    // 3. Gambar Garis Kurva Deret Utama (Solid Line - Utuh)
+    ctx.beginPath();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    for (let x = 0; x <= w; x += 2) {
+      const bv = minBV + (x / w) * rangeBV;
+      const bc = calcBC(bv, false);
+      const y = padT + h - (bc / 2.00) * h;
+      if (x === 0) ctx.moveTo(padL + x, y); else ctx.lineTo(padL + x, y);
+    }
+    ctx.stroke();
+
+    // 4. Garis Indikator Live (Putus-putus Kuning saat slider digeser)
+    const currentBC = calcBC(currentBV, isSupergiant);
+    const liveX = padL + ((currentBV - minBV) / rangeBV) * w;
+    const liveY = padT + h - (currentBC / 2.00) * h;
+
+    ctx.beginPath();
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(liveX, padT + h); ctx.lineTo(liveX, liveY); // Vertikal
+    ctx.moveTo(padL, liveY); ctx.lineTo(liveX, liveY);     // Horizontal
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Titik Fokus
+    ctx.beginPath();
+    ctx.arc(liveX, liveY, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+
+    // Label Floating
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px Segoe UI';
+    ctx.fillText(`BC = ${currentBC.toFixed(2)}`, liveX + 12, liveY - 8);
+  }
+
+  function updateAll() {
+    const bv = parseFloat(sliderBV.value);
+    let isSuper = false;
+    for (let r of radioTypes) { if (r.checked && r.value === 'super') isSuper = true; }
+
+    const bc = calcBC(bv, isSuper);
+    const temp = calcTemp(bv);
+    const color = getStarColorRGB(bv);
+
+    // Update UI Teks
+    badgeBV.innerText = bv.toFixed(2);
+    dispBV.innerText = bv.toFixed(2);
+    dispBC.innerText = bc.toFixed(2);
+    dispTemp.innerText = temp > 25000 ? '> 25.000 K' : `${temp} K`;
+
+    if (bv < 0.20) {
+      dispLoss.innerText = "Sinar Ultraviolet (UV)";
+      dispLoss.style.color = "#38bdf8";
+    } else if (bv <= 0.40) {
+      dispLoss.innerText = "Sangat Minimum (Efisien)";
+      dispLoss.style.color = "#4ade80";
+    } else {
+      dispLoss.innerText = "Panas Inframerah (IR)";
+      dispLoss.style.color = "#fb7185";
+    }
+
+    for (let bar of colorBars) bar.style.backgroundColor = color;
+
+    drawGraph(bv, isSuper);
+  }
+
+  function setPreset(val, type, btnEl) {
+    sliderBV.value = val;
+    for (let r of radioTypes) { r.checked = (r.value === type); }
+    
+    const btns = document.querySelectorAll('.btn');
+    btns.forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+
+    updateAll();
+  }
+
+  sliderBV.addEventListener('input', () => {
+    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    updateAll();
+  });
+
+  for (let r of radioTypes) { r.addEventListener('change', updateAll); }
+
+  // Jalankan saat pertama kali buka
+  updateAll();
+</script>
+</body>
+</html>
